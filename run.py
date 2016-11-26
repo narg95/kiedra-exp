@@ -16,7 +16,7 @@ def run_single_exp(args):
 
     print '[', file_name, noise_size ,'] running ...'
     result = run_exp(path, noise_size)   
-    print '[Done]', '[', file_name, noise_size, '] saving to file ...'
+    print '[Done]', file_name, noise_size
     
     with lock:
         save_to_file('results.tab', result)
@@ -104,8 +104,8 @@ def save_to_file(path, result):
 
 def run():
     experiments = []
-    pool = Pool(7)
-    for path in [p for p in get_file_paths()][300:305]:
+    pool = Pool(multiprocessing.cpu_count())
+    for path in get_file_paths():
         for n in [5, 10, 20]:
             experiments.append([path, n])
 
