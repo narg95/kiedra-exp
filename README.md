@@ -10,3 +10,9 @@ This repo contains the datasets used in the experiments.
 Please run `python -W ignore run.py`. The results will be saved in file `./results.tab`. 
 Note that this file will be deleted if it exist before executing the experiments.
 The experiments run in parallel taking in to account the amount of available cores in your cpu.
+
+The result is in the following format:
+
+-------- RELIEFF --------    --------- BMDA ---------
+WORKED    FOUND_VARIABLES    WORKED    FOUND_VARIABLES
+TRUE      ['VAR1', 'VAR2']   TRUE      ['VAR1', 'VAR2']
