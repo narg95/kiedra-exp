@@ -9,6 +9,7 @@ from Goldenberry.classification.base.GbFactory import GbFactory
 from Goldenberry.optimization.edas.Bivariate import Bmda, DependencyMethod
 
 lock = Lock()
+results_path = 'results.tab'
 
 def run_single_exp(args):
     [path, noise_size] = args
@@ -19,7 +20,7 @@ def run_single_exp(args):
     print '[Done]', file_name, noise_size
     
     with lock:
-        save_to_file('results.tab', result)
+        save_to_file(results_path, result)
     
 def run_exp(file_path, noise_size):
     
@@ -103,6 +104,8 @@ def save_to_file(path, result):
         file.write(result_string)
 
 def run():
+    if os.path.exists(results_path):
+        os.remove(results_path)
     experiments = []
     pool = Pool(multiprocessing.cpu_count())
     for path in get_file_paths():
