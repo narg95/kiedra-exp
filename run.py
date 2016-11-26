@@ -20,7 +20,7 @@ def run_single_exp(args):
     print '[Done]', file_name, noise_size
     
     with lock:
-        save_to_file(results_path, [file_name] + result)
+        save_to_file(results_path, file_name, result)
     
 def run_exp(file_path, noise_size):
     
@@ -98,8 +98,8 @@ def get_file_paths():
             
             yield path + '\\' +  file_name
 
-def save_to_file(path, result):
-    result_string = '\t'.join([str(val) for val in result]) + '\n'
+def save_to_file(path, file_name, result):
+    result_string = file_name + '\t'.join([str(val) for val in result]) + '\n'
     with open(path, 'a') as file:
         file.write(result_string)
 
