@@ -1,17 +1,41 @@
 import orange, orngSVM
 import Orange
+import multiprocessing
+from multiprocessing import Pool, Lock
 import numpy as np
+import os
 from Goldenberry.feature_selection.WKiera import GbWrapperCostFunction
 from Goldenberry.classification.base.GbFactory import GbFactory
 from Goldenberry.optimization.edas.Bivariate import Bmda, DependencyMethod
 
-def run():
-    data = Orange.data.Table(r'C:\Python27\Lib\site-packages\Orange\datasets\genomic-datasets\5way\5way-best201')
-    data = add_uniform_noise(data, 5)
-    bmda = setup_bmda(data)
+lock = Lock()
+
+def run_single_exp(args):
+    [path, noise_size] = args
+    file_name = os.path.basename(path)
+
+    print '[', file_name, noise_size ,'] running ...'
+    result = run_exp(path, noise_size)   
+    print '[Done]', '[', file_name, noise_size, '] saving to file ...'
+    
+    with lock:
+        save_to_file('results.tab', result)
+    
+def run_exp(file_path, noise_size):
+    
+    data = Orange.data.Table(file_path)
+    relevant_variables = data.domain.features
+    data = add_uniform_noise(data, noise_size)
+    
     relieff = Orange.feature.scoring.Relief()
-    result = bmda.search()
-    run_relieff(relieff, data)    
+    relief_relevant = relief_get_relevant_variables(relieff, data)
+    relieff_has_found = has_found_only_relevants(relevant_variables, relief_relevant)
+    
+    bmda = setup_bmda(data)
+    bmda_relevant = bmda_get_relevant_variables(bmda, data)
+    bmda_has_found = has_found_only_relevants(relevant_variables, bmda_relevant)
+    
+    return [relieff_has_found, relief_relevant, bmda_has_found, bmda_relevant]
 
 def setup_bmda(data):
     train_data, _ = sample_data(data, 400)
@@ -22,7 +46,7 @@ def setup_bmda(data):
         'gamma': 10,
         'normalization': False
     }
-    
+
     factory = GbFactory(orngSVM.SVMLearner, svm_params)
     cost_func = GbWrapperCostFunction(train_data, data, factory, 0, 4, 2)
     bmda = Bmda()
@@ -42,18 +66,51 @@ def add_uniform_noise(data, n):
     new_domain =  orange.Domain(data.domain.attributes + noise_features + [data.domain.class_var])
     return Orange.data.Table(new_domain, np_new_data)
 
-def run_relieff(score, data):
-    aux = [ (a.name, score(a, data)) for a in data.domain.attributes]
-    print aux
+def relief_get_relevant_variables(score, data):
+    relevant_attrs = [ a.name for a in data.domain.attributes if score(a, data) > 0.0]
+    return relevant_attrs
+
+def bmda_get_relevant_variables(bmda, data):
+    result = bmda.search()
+    relevant_attrs = [a.name for idx, a in enumerate(data.domain.attributes) if result.params[idx]]
+    return relevant_attrs
 
 def sample_data(data, n):
     sampler = Orange.data.sample.SubsetIndices2(p0=n)
     ind = sampler(data)
     traindata = data.select(ind, 0)
     testdata = data.select(ind, 1)
-    print 'data: ', len(traindata), len(testdata)
     traindata.shuffle()
     testdata.shuffle()
     return traindata, testdata
 
-run()
+def has_found_only_relevants(relevant_variables, found_var_names):
+    all_varaibles_found = all(relevant.name in found_var_names for relevant in relevant_variables)
+    found = (len(relevant_variables) == len(found_var_names)) and all_varaibles_found
+    return found
+
+def get_file_paths():
+    for (path, dirs, files) in os.walk('../model-free-data'):
+        for file_name in files:
+            if '.tab' not in file_name:
+                continue
+            
+            yield path + '\\' +  file_name
+
+def save_to_file(path, result):
+    result_string = '\t'.join([str(val) for val in result]) + '\n'
+    with open(path, 'a') as file:
+        file.write(result_string)
+
+def run():
+    experiments = []
+    pool = Pool(7)
+    for path in [p for p in get_file_paths()][300:305]:
+        for n in [5, 10, 20]:
+            experiments.append([path, n])
+
+    results = pool.map(run_single_exp, experiments)  
+
+if __name__ == '__main__':
+    multiprocessing.freeze_support()
+    run()
