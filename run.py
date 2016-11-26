@@ -99,7 +99,7 @@ def get_file_paths():
             yield path + '\\' +  file_name
 
 def save_to_file(path, file_name, result):
-    result_string = file_name + '\t'.join([str(val) for val in result]) + '\n'
+    result_string = file_name + '\t' + '\t'.join([str(val) for val in result]) + '\n'
     with open(path, 'a') as file:
         file.write(result_string)
 
