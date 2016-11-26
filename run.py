@@ -20,7 +20,7 @@ def run_single_exp(args):
     print '[Done]', file_name, noise_size
     
     with lock:
-        save_to_file(results_path, result)
+        save_to_file(results_path, [file_name] + result)
     
 def run_exp(file_path, noise_size):
     
@@ -103,9 +103,14 @@ def save_to_file(path, result):
     with open(path, 'a') as file:
         file.write(result_string)
 
+def add_header():
+    with open(results_path, 'a') as file:
+        file.write('\t'.join(['FILE', 'RELIEF_WORKED', 'RELIEF_VARIABLES', 'BMDA_WORKED', 'BMDA_VARIABLES']) + '\n')
 def run():
     if os.path.exists(results_path):
         os.remove(results_path)
+
+    add_header()
     experiments = []
     pool = Pool(multiprocessing.cpu_count())
     for path in get_file_paths():
