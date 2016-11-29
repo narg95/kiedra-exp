@@ -1,4 +1,5 @@
 import orange, orngSVM
+import numpy as np
 import Orange
 import multiprocessing
 from multiprocessing import Pool, Lock
@@ -11,8 +12,7 @@ from Goldenberry.optimization.edas.Bivariate import Bmda, DependencyMethod
 lock = Lock()
 results_path = 'results.tab'
 
-def run_single_exp(args):
-    [path, noise_size] = args
+def run_single_exp(path, noise_size):
     file_name = os.path.basename(path)
 
     print '[', file_name, noise_size ,'] running ...'
@@ -32,8 +32,7 @@ def run_exp(file_path, noise_size):
     relief_relevant = relief_get_relevant_variables(relieff, data)
     relieff_has_found = has_found_only_relevants(relevant_variables, relief_relevant)
     
-    bmda = setup_bmda(data)
-    bmda_relevant = bmda_get_relevant_variables(bmda, data)
+    bmda_relevant = bmda_get_relevant_variables(data)
     bmda_has_found = has_found_only_relevants(relevant_variables, bmda_relevant)
     
     return [relieff_has_found, relief_relevant, bmda_has_found, bmda_relevant]
@@ -71,9 +70,16 @@ def relief_get_relevant_variables(score, data):
     relevant_attrs = [ a.name for a in data.domain.attributes if score(a, data) > 0.0]
     return relevant_attrs
 
-def bmda_get_relevant_variables(bmda, data):
-    result = bmda.search()
-    relevant_attrs = [a.name for idx, a in enumerate(data.domain.attributes) if result.params[idx]]
+def bmda_get_relevant_variables(data):
+    runs = 20
+    runs_results = np.zeros(len(data.domain.attributes))
+    for i in range(runs):
+        bmda = setup_bmda(data)    
+        result = bmda.search()
+        runs_results += result.params
+
+    relevance_score = runs_results / float(runs) 
+    relevant_attrs = [ a.name for idx, a in enumerate(data.domain.attributes) if relevance_score[idx] >= 0.5]
     return relevant_attrs
 
 def sample_data(data, n):
