@@ -12,7 +12,8 @@ from Goldenberry.optimization.edas.Bivariate import Bmda, DependencyMethod
 lock = Lock()
 results_path = 'results.tab'
 
-def run_single_exp(path, noise_size):
+def run_single_exp(args):
+    [path, noise_size] = args;
     file_name = os.path.basename(path)
 
     print '[', file_name, noise_size ,'] running ...'
