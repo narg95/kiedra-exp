@@ -89,3 +89,4 @@ ENV/
 .ropeproject
 .vscode/launch.json
 results.tab
+analysis.tab
